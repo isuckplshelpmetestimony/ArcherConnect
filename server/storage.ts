@@ -4,6 +4,8 @@ import {
   type Notification, type InsertNotification, type Group, type InsertGroup,
   type Event, type InsertEvent, type Resource, type InsertResource
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -37,6 +39,179 @@ export interface IStorage {
   getResources(): Promise<Resource[]>;
   getResourcesByCategory(category: string): Promise<Resource[]>;
   createResource(resource: InsertResource): Promise<Resource>;
+}
+
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...insertUser,
+        interests: insertUser.interests || [],
+        clubs: insertUser.clubs || [],
+        notificationPreferences: insertUser.notificationPreferences || [],
+        keywords: insertUser.keywords || [],
+        emailNotifications: insertUser.emailNotifications ?? true,
+        pushNotifications: insertUser.pushNotifications ?? false,
+        onboardingCompleted: insertUser.onboardingCompleted ?? false,
+      })
+      .returning();
+    return user;
+  }
+
+  async updateUser(id: number, updateData: Partial<InsertUser>): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
+  }
+
+  async getAnnouncements(): Promise<Announcement[]> {
+    return await db.select().from(announcements).orderBy(announcements.date);
+  }
+
+  async getAnnouncementsByFilter(category?: string, interests?: string[]): Promise<Announcement[]> {
+    let query = db.select().from(announcements);
+    
+    // Note: For simplicity, we'll get all announcements and filter in memory
+    // In a production app, you'd want to use SQL WHERE clauses
+    const allAnnouncements = await query.orderBy(announcements.date);
+    
+    let filteredAnnouncements = allAnnouncements;
+    
+    if (category && category !== 'all') {
+      filteredAnnouncements = filteredAnnouncements.filter(a => a.category === category);
+    }
+    
+    if (interests && interests.length > 0) {
+      filteredAnnouncements = filteredAnnouncements.filter(a => 
+        a.relevantInterests.some(interest => interests.includes(interest))
+      );
+    }
+    
+    return filteredAnnouncements.sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+  }
+
+  async createAnnouncement(insertAnnouncement: InsertAnnouncement): Promise<Announcement> {
+    const [announcement] = await db
+      .insert(announcements)
+      .values({
+        ...insertAnnouncement,
+        relevantInterests: insertAnnouncement.relevantInterests || [],
+        relevantMajors: insertAnnouncement.relevantMajors || [],
+      })
+      .returning();
+    return announcement;
+  }
+
+  async getNotificationsByUserId(userId: number): Promise<Notification[]> {
+    return await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(notifications.date);
+  }
+
+  async createNotification(insertNotification: InsertNotification): Promise<Notification> {
+    const [notification] = await db
+      .insert(notifications)
+      .values({
+        ...insertNotification,
+        read: insertNotification.read ?? false,
+        deadline: insertNotification.deadline || null,
+      })
+      .returning();
+    return notification;
+  }
+
+  async markNotificationRead(id: number): Promise<boolean> {
+    const result = await db
+      .update(notifications)
+      .set({ read: true })
+      .where(eq(notifications.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async markAllNotificationsRead(userId: number): Promise<boolean> {
+    const result = await db
+      .update(notifications)
+      .set({ read: true })
+      .where(eq(notifications.userId, userId));
+    return true;
+  }
+
+  async getGroups(): Promise<Group[]> {
+    return await db.select().from(groups);
+  }
+
+  async getGroupById(id: number): Promise<Group | undefined> {
+    const [group] = await db.select().from(groups).where(eq(groups.id, id));
+    return group || undefined;
+  }
+
+  async createGroup(insertGroup: InsertGroup): Promise<Group> {
+    const [group] = await db
+      .insert(groups)
+      .values({
+        ...insertGroup,
+        memberCount: insertGroup.memberCount || 0,
+      })
+      .returning();
+    return group;
+  }
+
+  async getEvents(): Promise<Event[]> {
+    return await db.select().from(events).orderBy(events.date);
+  }
+
+  async getEventById(id: number): Promise<Event | undefined> {
+    const [event] = await db.select().from(events).where(eq(events.id, id));
+    return event || undefined;
+  }
+
+  async createEvent(insertEvent: InsertEvent): Promise<Event> {
+    const [event] = await db
+      .insert(events)
+      .values({
+        ...insertEvent,
+        registered: insertEvent.registered ?? false,
+      })
+      .returning();
+    return event;
+  }
+
+  async getResources(): Promise<Resource[]> {
+    return await db.select().from(resources);
+  }
+
+  async getResourcesByCategory(category: string): Promise<Resource[]> {
+    return await db.select().from(resources).where(eq(resources.category, category));
+  }
+
+  async createResource(insertResource: InsertResource): Promise<Resource> {
+    const [resource] = await db
+      .insert(resources)
+      .values({
+        ...insertResource,
+        url: insertResource.url || null,
+      })
+      .returning();
+    return resource;
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -413,4 +588,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
