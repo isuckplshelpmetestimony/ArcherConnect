@@ -4,10 +4,10 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { Megaphone, Calendar, Users, Book, Clock, TrendingUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Announcement, Event, Notification } from "@shared/schema";
-import { useUser } from "@/hooks/use-user";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Dashboard() {
-  const { user } = useUser();
+  const { user } = useAuth();
 
   const { data: announcements, isLoading: announcementsLoading } = useQuery<Announcement[]>({
     queryKey: ["/api/announcements"],
