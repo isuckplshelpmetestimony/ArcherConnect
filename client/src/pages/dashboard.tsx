@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Megaphone, Calendar, Users, Book, Clock, TrendingUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Announcement, Event, Notification } from "@shared/schema";
+import type { Announcement, Event, Notification, Group, Resource } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Dashboard() {
@@ -27,17 +27,30 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
+  const { data: groups, isLoading: groupsLoading } = useQuery<Group[]>({
+    queryKey: ["/api/groups"],
+  });
+
+  const { data: userMemberships } = useQuery<number[]>({
+    queryKey: [`/api/user/${user?.id || 1}/group-memberships`],
+    enabled: !!user,
+  });
+
+  const { data: resources, isLoading: resourcesLoading } = useQuery<Resource[]>({
+    queryKey: ["/api/resources"],
+  });
+
   const stats = {
     announcements: announcements?.length || 0,
     events: events?.filter(e => new Date(e.date) > new Date()).length || 0,
-    groups: 0,
-    resources: 23,
+    groups: userMemberships?.length || 0,
+    resources: resources?.length || 0,
   };
 
   const recentAnnouncements = announcements?.slice(0, 3) || [];
   const upcomingDeadlines = notifications?.filter(n => n.deadline && new Date(n.deadline) > new Date()).slice(0, 2) || [];
 
-  if (announcementsLoading || eventsLoading) {
+  if (announcementsLoading || eventsLoading || groupsLoading || resourcesLoading) {
     return (
       <MainLayout>
         <div className="space-y-8">

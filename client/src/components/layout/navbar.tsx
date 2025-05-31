@@ -1,7 +1,5 @@
-import { Search, Bell, GraduationCap } from "lucide-react";
+import { Bell, GraduationCap } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,8 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 
 export function Navbar() {
-  const [location, setLocation] = useLocation();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [location] = useLocation();
   const { user, logout } = useAuth();
 
   const navItems = [
@@ -59,20 +56,8 @@ export function Navbar() {
             </div>
           </div>
 
-          {/* Search and User Actions */}
+          {/* User Actions */}
           <div className="flex items-center space-x-4">
-            {/* Search Bar */}
-            <div className="hidden sm:block relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-64"
-              />
-            </div>
-
             {/* Notifications */}
             <Button
               variant="ghost"
