@@ -61,6 +61,42 @@ export default function Announcements() {
     },
   });
 
+  const createSampleMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/announcements", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "Sample University Announcement",
+          content: "This is a test announcement to demonstrate the system functionality. Once Facebook integration is set up, real announcements will appear here.",
+          category: "academic",
+          relevantInterests: ["Technology", "Academic"],
+          relevantMajors: ["Computer Science", "Information Technology"]
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to create announcement");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Sample announcement created",
+        description: "A test announcement has been added to demonstrate the system.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to create announcement",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
   const toggleFavoriteMutation = useMutation({
     mutationFn: async ({ announcementId, isFavorited }: { announcementId: number; isFavorited: boolean }) => {
       const userId = user?.id || 1;
@@ -153,15 +189,25 @@ export default function Announcements() {
             <h1 className="text-2xl font-semibold text-gray-900">Announcements</h1>
             <p className="mt-1 text-sm text-gray-600">Stay updated with the latest news and opportunities.</p>
           </div>
-          <Button
-            onClick={() => scrapeFacebookMutation.mutate()}
-            disabled={scrapeFacebookMutation.isPending}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${scrapeFacebookMutation.isPending ? 'animate-spin' : ''}`} />
-            {scrapeFacebookMutation.isPending ? 'Updating...' : 'Refresh Announcements'}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => scrapeFacebookMutation.mutate()}
+              disabled={scrapeFacebookMutation.isPending}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${scrapeFacebookMutation.isPending ? 'animate-spin' : ''}`} />
+              {scrapeFacebookMutation.isPending ? 'Updating...' : 'Refresh Announcements'}
+            </Button>
+            <Button
+              onClick={() => createSampleMutation.mutate()}
+              disabled={createSampleMutation.isPending}
+              variant="default"
+              className="flex items-center gap-2"
+            >
+              {createSampleMutation.isPending ? 'Creating...' : 'Create Test Announcement'}
+            </Button>
+          </div>
         </div>
 
         {/* Search and Filters */}
