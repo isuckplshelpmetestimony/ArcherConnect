@@ -471,6 +471,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test Facebook token endpoint
+  app.get("/api/test-facebook-token", async (req, res) => {
+    try {
+      const testUrl = `https://graph.facebook.com/v23.0/me?access_token=${process.env.FACEBOOK_ACCESS_TOKEN}`;
+      const response = await fetch(testUrl);
+      const data = await response.json();
+      
+      if (data.error) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid token', 
+          details: data.error 
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: 'Token is valid',
+        tokenInfo: data 
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Facebook scraping endpoint
   app.post("/api/scrape-facebook", async (req, res) => {
     try {
