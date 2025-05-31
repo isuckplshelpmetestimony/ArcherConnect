@@ -384,13 +384,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/events", async (req, res) => {
     try {
-      const result = insertEventSchema.safeParse(req.body);
+      // Convert date string to Date object if needed
+      const eventData = {
+        ...req.body,
+        date: new Date(req.body.date)
+      };
+      
+      const result = insertEventSchema.safeParse(eventData);
       if (!result.success) {
+        console.log("Event validation failed:", result.error.errors);
         return res.status(400).json({ message: "Invalid event data", errors: result.error.errors });
       }
       const event = await storage.createEvent(result.data);
       res.status(201).json(event);
     } catch (error) {
+      console.error("Event creation error:", error);
       res.status(500).json({ message: "Failed to create event" });
     }
   });
