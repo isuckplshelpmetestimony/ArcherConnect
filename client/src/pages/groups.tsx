@@ -1,18 +1,112 @@
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Code, Palette, Scale, Users, Heart, Music } from "lucide-react";
-import type { Group } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
+import { Code, Palette, Scale, Users, Heart, Music, Plus, UserPlus } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import type { Group, InsertGroup } from "@shared/schema";
 import { useUser } from "@/hooks/use-user";
+
+const groupSchema = z.object({
+  name: z.string().min(1, "Group name is required"),
+  description: z.string().min(1, "Description is required"),
+  category: z.string().min(1, "Category is required"),
+  icon: z.string().min(1, "Icon is required"),
+});
+
+type GroupForm = z.infer<typeof groupSchema>;
 
 export default function Groups() {
   const { user } = useUser();
+  const { toast } = useToast();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   const { data: groups, isLoading } = useQuery<Group[]>({
     queryKey: ["/api/groups"],
   });
+
+  const form = useForm<GroupForm>({
+    resolver: zodResolver(groupSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      category: "",
+      icon: "fas fa-users",
+    },
+  });
+
+  const createGroupMutation = useMutation({
+    mutationFn: async (data: GroupForm) => {
+      const response = await fetch("/api/groups", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to create group");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Group created successfully",
+        description: "Your new group has been created!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+      setIsCreateDialogOpen(false);
+      form.reset();
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to create group",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const joinGroupMutation = useMutation({
+    mutationFn: async (groupId: number) => {
+      const response = await fetch(`/api/groups/${groupId}/join`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: user?.id || 1 }),
+      });
+      if (!response.ok) throw new Error("Failed to join group");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Joined group successfully",
+        description: "You have joined the group!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to join group",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: GroupForm) => {
+    createGroupMutation.mutate(data);
+  };
 
   const getGroupIcon = (iconClass: string) => {
     if (iconClass.includes("code")) return <Code className="h-6 w-6" />;
@@ -73,9 +167,97 @@ export default function Groups() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Groups</h1>
-          <p className="mt-1 text-sm text-gray-600">Connect with student organizations and clubs on campus.</p>
+        <div className="mb-6 flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Groups</h1>
+            <p className="mt-1 text-sm text-gray-600">Connect with student organizations and clubs on campus.</p>
+          </div>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Create Group
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Create New Group</DialogTitle>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Group Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter group name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Describe your group" 
+                            className="resize-none" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="technology">Technology</SelectItem>
+                            <SelectItem value="arts">Arts</SelectItem>
+                            <SelectItem value="academic">Academic</SelectItem>
+                            <SelectItem value="sports">Sports</SelectItem>
+                            <SelectItem value="social">Social</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsCreateDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={createGroupMutation.isPending}
+                    >
+                      {createGroupMutation.isPending ? "Creating..." : "Create Group"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -97,10 +279,11 @@ export default function Groups() {
                   <p className="text-sm text-gray-600 mb-4">{group.description}</p>
                   <Button
                     className="w-full"
-                    variant={isJoined(group.name) ? "secondary" : "default"}
-                    disabled={isJoined(group.name)}
+                    onClick={() => joinGroupMutation.mutate(group.id)}
+                    disabled={joinGroupMutation.isPending}
                   >
-                    {isJoined(group.name) ? "Joined" : "Join Group"}
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    {joinGroupMutation.isPending ? "Joining..." : "Join Group"}
                   </Button>
                 </CardContent>
               </Card>

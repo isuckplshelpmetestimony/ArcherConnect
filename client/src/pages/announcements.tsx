@@ -17,8 +17,6 @@ export default function Announcements() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [relevanceFilter, setRelevanceFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("recent");
-  const [categoryFilter, setCategoryFilter] = useState("all");
 
   const { data: announcements, isLoading } = useQuery<Announcement[]>({
     queryKey: ["/api/announcements", categoryFilter, user?.interests],

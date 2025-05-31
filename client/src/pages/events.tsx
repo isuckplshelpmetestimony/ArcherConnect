@@ -1,15 +1,119 @@
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Briefcase, Ghost, Users, Calendar, MapPin, Clock } from "lucide-react";
-import type { Event } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
+import { Briefcase, Ghost, Users, Calendar, MapPin, Clock, Plus, Heart } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import type { Event, InsertEvent } from "@shared/schema";
+import { useUser } from "@/hooks/use-user";
+
+const eventSchema = z.object({
+  title: z.string().min(1, "Event title is required"),
+  description: z.string().min(1, "Description is required"),
+  date: z.string().min(1, "Date is required"),
+  location: z.string().min(1, "Location is required"),
+  category: z.string().min(1, "Category is required"),
+});
+
+type EventForm = z.infer<typeof eventSchema>;
 
 export default function Events() {
+  const { user } = useUser();
+  const { toast } = useToast();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
   const { data: events, isLoading } = useQuery<Event[]>({
     queryKey: ["/api/events"],
   });
+
+  const form = useForm<EventForm>({
+    resolver: zodResolver(eventSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      date: "",
+      location: "",
+      category: "",
+    },
+  });
+
+  const createEventMutation = useMutation({
+    mutationFn: async (data: EventForm) => {
+      const eventData = {
+        ...data,
+        date: new Date(data.date).toISOString(),
+        icon: "fas fa-calendar",
+      };
+      const response = await fetch("/api/events", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(eventData),
+      });
+      if (!response.ok) throw new Error("Failed to create event");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Event created successfully",
+        description: "Your new event has been created!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      setIsCreateDialogOpen(false);
+      form.reset();
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to create event",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const interestedMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      const response = await fetch(`/api/events/${eventId}/interested`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: user?.id || 1 }),
+      });
+      if (!response.ok) throw new Error("Failed to mark as interested");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Marked as interested",
+        description: "You've shown interest in this event!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to mark interest",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: EventForm) => {
+    createEventMutation.mutate(data);
+  };
 
   const getEventIcon = (iconClass: string) => {
     if (iconClass.includes("briefcase")) return <Briefcase className="h-6 w-6" />;
