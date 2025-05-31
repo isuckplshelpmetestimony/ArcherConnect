@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/not-found";
+import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Onboarding from "@/pages/onboarding";
 import Dashboard from "@/pages/dashboard";
@@ -35,14 +36,27 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
+  const { user, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
   return (
     <Switch>
       <Route path="/">
-        <ProtectedRoute>
+        {!user ? (
+          <Landing />
+        ) : user.onboardingCompleted ? (
           <Dashboard />
-        </ProtectedRoute>
+        ) : (
+          <Onboarding />
+        )}
       </Route>
-      <Route path="/onboarding" component={Onboarding} />
+      <Route path="/login" component={Login} />
+      <Route path="/onboarding">
+        {user ? <Onboarding /> : <Login />}
+      </Route>
       <Route path="/announcements">
         <ProtectedRoute>
           <Announcements />
