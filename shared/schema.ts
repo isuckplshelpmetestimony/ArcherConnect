@@ -8,7 +8,6 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   major: text("major").notNull(),
   interests: text("interests").array().notNull().default([]),
-  clubs: text("clubs").array().notNull().default([]),
   notificationPreferences: text("notification_preferences").array().notNull().default([]),
   keywords: text("keywords").array().notNull().default([]),
   emailNotifications: boolean("email_notifications").notNull().default(true),

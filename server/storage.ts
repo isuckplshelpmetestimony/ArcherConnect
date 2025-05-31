@@ -58,7 +58,6 @@ export class DatabaseStorage implements IStorage {
       .values({
         ...insertUser,
         interests: insertUser.interests || [],
-        clubs: insertUser.clubs || [],
         notificationPreferences: insertUser.notificationPreferences || [],
         keywords: insertUser.keywords || [],
         emailNotifications: insertUser.emailNotifications ?? true,
@@ -403,7 +402,16 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser, 
+      id,
+      interests: insertUser.interests || [],
+      notificationPreferences: insertUser.notificationPreferences || [],
+      keywords: insertUser.keywords || [],
+      emailNotifications: insertUser.emailNotifications ?? true,
+      pushNotifications: insertUser.pushNotifications ?? false,
+      onboardingCompleted: insertUser.onboardingCompleted ?? false,
+    };
     this.users.set(id, user);
     return user;
   }
