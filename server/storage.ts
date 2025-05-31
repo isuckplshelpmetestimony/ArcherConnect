@@ -1,9 +1,12 @@
 import { 
-  users, announcements, notifications, groups, events, resources, favoriteAnnouncements,
+  users, announcements, notifications, groups, events, resources, favoriteAnnouncements, 
+  groupMemberships, groupMessages,
   type User, type InsertUser, type Announcement, type InsertAnnouncement,
   type Notification, type InsertNotification, type Group, type InsertGroup,
   type Event, type InsertEvent, type Resource, type InsertResource,
-  type FavoriteAnnouncement, type InsertFavoriteAnnouncement
+  type FavoriteAnnouncement, type InsertFavoriteAnnouncement,
+  type GroupMembership, type InsertGroupMembership,
+  type GroupMessage, type InsertGroupMessage
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -46,6 +49,16 @@ export interface IStorage {
   addFavoriteAnnouncement(favorite: InsertFavoriteAnnouncement): Promise<FavoriteAnnouncement>;
   removeFavoriteAnnouncement(userId: number, announcementId: number): Promise<boolean>;
   isFavoriteAnnouncement(userId: number, announcementId: number): Promise<boolean>;
+
+  // Group membership operations
+  joinGroup(userId: number, groupId: number): Promise<GroupMembership>;
+  leaveGroup(userId: number, groupId: number): Promise<boolean>;
+  isGroupMember(userId: number, groupId: number): Promise<boolean>;
+  getGroupMemberships(userId: number): Promise<number[]>;
+  
+  // Group message operations
+  getGroupMessages(groupId: number): Promise<GroupMessage[]>;
+  sendGroupMessage(message: InsertGroupMessage): Promise<GroupMessage>;
 }
 
 export class DatabaseStorage implements IStorage {

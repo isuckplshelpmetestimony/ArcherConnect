@@ -73,6 +73,21 @@ export const favoriteAnnouncements = pgTable("favorite_announcements", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const groupMemberships = pgTable("group_memberships", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  groupId: integer("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+});
+
+export const groupMessages = pgTable("group_messages", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
 });
@@ -104,6 +119,16 @@ export const insertFavoriteAnnouncementSchema = createInsertSchema(favoriteAnnou
   createdAt: true,
 });
 
+export const insertGroupMembershipSchema = createInsertSchema(groupMemberships).omit({
+  id: true,
+  joinedAt: true,
+});
+
+export const insertGroupMessageSchema = createInsertSchema(groupMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Announcement = typeof announcements.$inferSelect;
@@ -118,3 +143,7 @@ export type Resource = typeof resources.$inferSelect;
 export type InsertResource = z.infer<typeof insertResourceSchema>;
 export type FavoriteAnnouncement = typeof favoriteAnnouncements.$inferSelect;
 export type InsertFavoriteAnnouncement = z.infer<typeof insertFavoriteAnnouncementSchema>;
+export type GroupMembership = typeof groupMemberships.$inferSelect;
+export type InsertGroupMembership = z.infer<typeof insertGroupMembershipSchema>;
+export type GroupMessage = typeof groupMessages.$inferSelect;
+export type InsertGroupMessage = z.infer<typeof insertGroupMessageSchema>;
