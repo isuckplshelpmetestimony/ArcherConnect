@@ -5,12 +5,12 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GraduationCap, Briefcase, FlaskConical, Plane } from "lucide-react";
 import type { Notification } from "@shared/schema";
-import { useUser } from "@/hooks/use-user";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Notifications() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
