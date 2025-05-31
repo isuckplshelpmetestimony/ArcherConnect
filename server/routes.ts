@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { FacebookScraper } from "./facebook-scraper";
 import { insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -129,6 +130,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(resources);
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Facebook scraping endpoint
+  app.post("/api/scrape-facebook", async (req, res) => {
+    try {
+      const scraper = new FacebookScraper();
+      const count = await scraper.scrapeAndStoreAnnouncements();
+      res.json({ 
+        message: `Successfully scraped and stored ${count} announcements from Facebook`,
+        count 
+      });
+    } catch (error) {
+      console.error("Facebook scraping error:", error);
+      res.status(500).json({ 
+        message: "Failed to scrape Facebook posts", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
     }
   });
 

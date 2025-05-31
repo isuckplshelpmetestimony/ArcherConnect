@@ -1,17 +1,20 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Search, Filter } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Search, Filter, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Announcement } from "@shared/schema";
 import { useUser } from "@/hooks/use-user";
 
 export default function Announcements() {
   const { user } = useUser();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [relevanceFilter, setRelevanceFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("recent");
@@ -31,6 +34,28 @@ export default function Announcements() {
       const response = await fetch(`/api/announcements?${params.toString()}`);
       if (!response.ok) throw new Error("Failed to fetch announcements");
       return response.json();
+    },
+  });
+
+  const scrapeFacebookMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("/api/scrape-facebook", {
+        method: "POST",
+      });
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Facebook posts scraped successfully",
+        description: `Added ${data.count} new announcements from Facebook pages`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to scrape Facebook posts",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
     },
   });
 
