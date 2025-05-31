@@ -72,7 +72,8 @@ export default function Onboarding() {
         description: "Your profile has been set up successfully.",
       });
 
-      setLocation("/");
+      // Force page refresh to update authentication state
+      window.location.href = "/";
     } catch (error) {
       toast({
         title: "Error",

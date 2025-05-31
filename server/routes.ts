@@ -197,6 +197,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/user/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updateData = req.body;
+      const user = await storage.updateUser(id, updateData);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error("User update error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Announcement routes
   app.get("/api/announcements", async (req, res) => {
     try {
