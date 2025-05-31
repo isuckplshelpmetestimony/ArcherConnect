@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { FacebookScraper } from "./facebook-scraper";
-import { insertUserSchema, insertFavoriteAnnouncementSchema } from "@shared/schema";
+import { insertUserSchema, insertFavoriteAnnouncementSchema, insertGroupSchema, insertEventSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
