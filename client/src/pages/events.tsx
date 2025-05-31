@@ -50,19 +50,25 @@ export default function Events() {
 
   const createEventMutation = useMutation({
     mutationFn: async (data: EventForm) => {
-      const eventData = {
-        ...data,
-        date: new Date(data.date).toISOString(),
-        icon: "fas fa-calendar",
-      };
       const response = await fetch("/api/events", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(eventData),
+        body: JSON.stringify({
+          title: data.title,
+          description: data.description,
+          date: new Date(data.date).toISOString(),
+          location: data.location,
+          category: data.category,
+          icon: "fas fa-calendar",
+          registered: false
+        }),
       });
-      if (!response.ok) throw new Error("Failed to create event");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create event");
+      }
       return response.json();
     },
     onSuccess: () => {
