@@ -11,12 +11,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useUser } from "@/hooks/use-user";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Navbar() {
   const [location, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
-  const { user } = useUser();
+  const { user, logout } = useAuth();
 
   const navItems = [
     { path: "/dashboard", label: "Dashboard" },
@@ -27,8 +27,7 @@ export function Navbar() {
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem("archerconnect_user");
-    setLocation("/");
+    logout();
   };
 
   return (
