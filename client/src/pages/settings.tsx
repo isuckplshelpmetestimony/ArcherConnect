@@ -44,10 +44,29 @@ export default function Settings() {
   const onSubmit = async (data: SettingsForm) => {
     setIsLoading(true);
     try {
-      await updateUser({
-        ...data,
-        keywords: data.keywords.split(",").map(k => k.trim()).filter(k => k),
+      const userId = localStorage.getItem("user_id");
+      const token = localStorage.getItem("auth_token");
+      
+      if (!userId || !token) {
+        throw new Error("Authentication required");
+      }
+
+      const response = await fetch(`/api/user/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "x-user-id": userId,
+        },
+        body: JSON.stringify({
+          ...data,
+          keywords: data.keywords.split(",").map(k => k.trim()).filter(k => k),
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error("Failed to update settings");
+      }
 
       toast({
         title: "Settings saved",

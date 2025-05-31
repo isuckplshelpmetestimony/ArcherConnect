@@ -53,6 +53,11 @@ function Router() {
           <Onboarding />
         )}
       </Route>
+      <Route path="/dashboard">
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      </Route>
       <Route path="/login" component={Login} />
       <Route path="/onboarding">
         {user ? <Onboarding /> : <Login />}
