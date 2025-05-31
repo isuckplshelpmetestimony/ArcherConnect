@@ -48,7 +48,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const response = await apiRequest("PATCH", `/api/user/${user.id}`, userData);
         const updatedUser = await response.json();
         setUser(updatedUser);
-        localStorage.setItem("campusconnect_user", JSON.stringify(updatedUser));
+        localStorage.setItem("archerconnect_user", JSON.stringify(updatedUser));
       } catch (error) {
         console.error("Error updating user:", error);
         throw error;

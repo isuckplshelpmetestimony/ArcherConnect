@@ -27,7 +27,7 @@ export function Navbar() {
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem("campusconnect_user");
+    localStorage.removeItem("archerconnect_user");
     setLocation("/");
   };
 
