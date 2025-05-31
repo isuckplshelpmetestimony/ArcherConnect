@@ -283,6 +283,61 @@ export class DatabaseStorage implements IStorage {
       );
     return !!favorite;
   }
+
+  // Group membership operations
+  async joinGroup(userId: number, groupId: number): Promise<GroupMembership> {
+    const [membership] = await db
+      .insert(groupMemberships)
+      .values({ userId, groupId })
+      .returning();
+    return membership;
+  }
+
+  async leaveGroup(userId: number, groupId: number): Promise<boolean> {
+    const result = await db
+      .delete(groupMemberships)
+      .where(and(
+        eq(groupMemberships.userId, userId),
+        eq(groupMemberships.groupId, groupId)
+      ));
+    return result.rowCount > 0;
+  }
+
+  async isGroupMember(userId: number, groupId: number): Promise<boolean> {
+    const [membership] = await db
+      .select()
+      .from(groupMemberships)
+      .where(and(
+        eq(groupMemberships.userId, userId),
+        eq(groupMemberships.groupId, groupId)
+      ));
+    return !!membership;
+  }
+
+  async getGroupMemberships(userId: number): Promise<number[]> {
+    const memberships = await db
+      .select({ groupId: groupMemberships.groupId })
+      .from(groupMemberships)
+      .where(eq(groupMemberships.userId, userId));
+    return memberships.map(m => m.groupId);
+  }
+
+  // Group message operations
+  async getGroupMessages(groupId: number): Promise<GroupMessage[]> {
+    return await db
+      .select()
+      .from(groupMessages)
+      .where(eq(groupMessages.groupId, groupId))
+      .orderBy(groupMessages.createdAt);
+  }
+
+  async sendGroupMessage(message: InsertGroupMessage): Promise<GroupMessage> {
+    const [newMessage] = await db
+      .insert(groupMessages)
+      .values(message)
+      .returning();
+    return newMessage;
+  }
 }
 
 export class MemStorage implements IStorage {

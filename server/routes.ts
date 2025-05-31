@@ -365,10 +365,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/groups/:id/join", async (req, res) => {
     try {
-      // For now, just return success - in a real app you'd track memberships
+      const groupId = parseInt(req.params.id);
+      const userId = req.body.userId || 1; // Should get from auth
+      
+      await storage.joinGroup(userId, groupId);
       res.json({ message: "Joined group successfully" });
     } catch (error) {
+      console.error("Join group error:", error);
       res.status(500).json({ message: "Failed to join group" });
+    }
+  });
+
+  app.post("/api/groups/:id/leave", async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.id);
+      const userId = req.body.userId || 1; // Should get from auth
+      
+      const success = await storage.leaveGroup(userId, groupId);
+      if (success) {
+        res.json({ message: "Left group successfully" });
+      } else {
+        res.status(404).json({ message: "Membership not found" });
+      }
+    } catch (error) {
+      console.error("Leave group error:", error);
+      res.status(500).json({ message: "Failed to leave group" });
+    }
+  });
+
+  app.get("/api/user/:userId/group-memberships", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const memberships = await storage.getGroupMemberships(userId);
+      res.json(memberships);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch group memberships" });
     }
   });
 

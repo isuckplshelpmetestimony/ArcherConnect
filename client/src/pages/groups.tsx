@@ -11,7 +11,7 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { Code, Palette, Scale, Users, Heart, Music, Plus, UserPlus } from "lucide-react";
+import { Code, Palette, Scale, Users, Heart, Music, Plus, UserPlus, UserMinus, MessageCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -31,9 +31,15 @@ export default function Groups() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedGroupChat, setSelectedGroupChat] = useState<number | null>(null);
 
   const { data: groups, isLoading } = useQuery<Group[]>({
     queryKey: ["/api/groups"],
+  });
+
+  const { data: userMemberships } = useQuery<number[]>({
+    queryKey: [`/api/user/${user?.id || 1}/group-memberships`],
+    enabled: !!user,
   });
 
   const form = useForm<GroupForm>({
@@ -94,10 +100,40 @@ export default function Groups() {
         description: "You have joined the group!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/user/${user?.id || 1}/group-memberships`] });
     },
     onError: (error) => {
       toast({
         title: "Failed to join group",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const leaveGroupMutation = useMutation({
+    mutationFn: async (groupId: number) => {
+      const response = await fetch(`/api/groups/${groupId}/leave`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: user?.id || 1 }),
+      });
+      if (!response.ok) throw new Error("Failed to leave group");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Left group successfully",
+        description: "You have left the group.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/user/${user?.id || 1}/group-memberships`] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to leave group",
         description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
       });
@@ -262,32 +298,59 @@ export default function Groups() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {groups && groups.length > 0 ? (
-            groups.map((group) => (
-              <Card key={group.id} className="card-hover">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className={`w-12 h-12 ${getBackgroundColor(group.category)} rounded-lg flex items-center justify-center`}>
-                      <div className={getIconColor(group.category)}>
-                        {getGroupIcon(group.icon)}
+            groups.map((group) => {
+              const isMember = userMemberships?.includes(group.id) || false;
+              
+              return (
+                <Card key={group.id} className="card-hover">
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className={`w-12 h-12 ${getBackgroundColor(group.category)} rounded-lg flex items-center justify-center`}>
+                        <div className={getIconColor(group.category)}>
+                          {getGroupIcon(group.icon)}
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900">{group.name}</h3>
+                        <p className="text-sm text-gray-500">{group.memberCount} members</p>
                       </div>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900">{group.name}</h3>
-                      <p className="text-sm text-gray-500">{group.memberCount} members</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">{group.description}</p>
-                  <Button
-                    className="w-full"
-                    onClick={() => joinGroupMutation.mutate(group.id)}
-                    disabled={joinGroupMutation.isPending}
-                  >
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    {joinGroupMutation.isPending ? "Joining..." : "Join Group"}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))
+                    <p className="text-sm text-gray-600 mb-4">{group.description}</p>
+                    
+                    {isMember ? (
+                      <div className="space-y-2">
+                        <Button
+                          className="w-full"
+                          variant="outline"
+                          onClick={() => setSelectedGroupChat(group.id)}
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Open Chat
+                        </Button>
+                        <Button
+                          className="w-full"
+                          variant="destructive"
+                          onClick={() => leaveGroupMutation.mutate(group.id)}
+                          disabled={leaveGroupMutation.isPending}
+                        >
+                          <UserMinus className="h-4 w-4 mr-2" />
+                          {leaveGroupMutation.isPending ? "Leaving..." : "Leave Group"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        className="w-full"
+                        onClick={() => joinGroupMutation.mutate(group.id)}
+                        disabled={joinGroupMutation.isPending}
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        {joinGroupMutation.isPending ? "Joining..." : "Join Group"}
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })
           ) : (
             <div className="col-span-full">
               <Card>
