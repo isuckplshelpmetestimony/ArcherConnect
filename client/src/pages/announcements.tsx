@@ -160,7 +160,7 @@ export default function Announcements() {
             className="flex items-center gap-2"
           >
             <RefreshCw className={`h-4 w-4 ${scrapeFacebookMutation.isPending ? 'animate-spin' : ''}`} />
-            {scrapeFacebookMutation.isPending ? 'Fetching...' : 'Refresh'}
+            {scrapeFacebookMutation.isPending ? 'Updating...' : 'Refresh Announcements'}
           </Button>
         </div>
 
@@ -180,19 +180,8 @@ export default function Announcements() {
                 />
               </div>
 
-              {/* Filter Dropdowns */}
+              {/* Filter Dropdown */}
               <div className="flex gap-3">
-                <Select value={relevanceFilter} onValueChange={setRelevanceFilter}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Relevance" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="relevant">Relevant</SelectItem>
-                    <SelectItem value="irrelevant">Irrelevant</SelectItem>
-                  </SelectContent>
-                </Select>
-                
                 <Select value={relevanceFilter} onValueChange={setRelevanceFilter}>
                   <SelectTrigger className="w-40">
                     <SelectValue placeholder="Filter" />

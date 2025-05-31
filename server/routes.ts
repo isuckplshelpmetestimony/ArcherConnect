@@ -175,6 +175,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Groups endpoints
+  app.get("/api/groups", async (req, res) => {
+    try {
+      const groups = await storage.getGroups();
+      res.json(groups);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch groups" });
+    }
+  });
+
+  app.post("/api/groups", async (req, res) => {
+    try {
+      const result = insertGroupSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid group data", errors: result.error.errors });
+      }
+      const group = await storage.createGroup(result.data);
+      res.status(201).json(group);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create group" });
+    }
+  });
+
+  app.post("/api/groups/:id/join", async (req, res) => {
+    try {
+      // For now, just return success - in a real app you'd track memberships
+      res.json({ message: "Joined group successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to join group" });
+    }
+  });
+
+  // Events endpoints
+  app.get("/api/events", async (req, res) => {
+    try {
+      const events = await storage.getEvents();
+      res.json(events);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch events" });
+    }
+  });
+
+  app.post("/api/events", async (req, res) => {
+    try {
+      const result = insertEventSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid event data", errors: result.error.errors });
+      }
+      const event = await storage.createEvent(result.data);
+      res.status(201).json(event);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create event" });
+    }
+  });
+
+  app.post("/api/events/:id/interested", async (req, res) => {
+    try {
+      // For now, just return success - in a real app you'd track interests
+      res.json({ message: "Marked as interested successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to mark interest" });
+    }
+  });
+
   // Facebook scraping endpoint
   app.post("/api/scrape-facebook", async (req, res) => {
     try {
