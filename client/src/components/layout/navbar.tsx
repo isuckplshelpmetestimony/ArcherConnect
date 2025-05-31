@@ -39,7 +39,7 @@ export function Navbar() {
           <div className="flex items-center space-x-8">
             <Link href="/dashboard" className="flex items-center">
               <GraduationCap className="h-6 w-6 text-primary mr-2" />
-              <span className="text-xl font-bold text-gray-900">CampusConnect</span>
+              <span className="text-xl font-bold text-gray-900">ArcherConnect</span>
             </Link>
             
             {/* Desktop Navigation */}

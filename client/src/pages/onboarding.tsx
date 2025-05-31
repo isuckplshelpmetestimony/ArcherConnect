@@ -53,7 +53,7 @@ export default function Onboarding() {
       });
 
       toast({
-        title: "Welcome to CampusConnect!",
+        title: "Welcome to ArcherConnect!",
         description: "Your profile has been set up successfully.",
       });
 
@@ -76,13 +76,13 @@ export default function Onboarding() {
         <div className="text-center">
           <div className="flex items-center justify-center mb-6">
             <GraduationCap className="h-8 w-8 text-primary mr-3" />
-            <h1 className="text-2xl font-bold text-gray-900">CampusConnect</h1>
+            <h1 className="text-2xl font-bold text-gray-900">ArcherConnect</h1>
           </div>
         </div>
 
         {/* Welcome Content */}
         <div className="text-center space-y-4">
-          <h2 className="text-2xl font-semibold text-gray-900">Welcome to CampusConnect</h2>
+          <h2 className="text-2xl font-semibold text-gray-900">Welcome to ArcherConnect</h2>
           <p className="text-gray-600 leading-relaxed">
             Let's personalize your experience. Tell us about your academic major, interests, and any clubs you're involved in to filter announcements effectively.
           </p>

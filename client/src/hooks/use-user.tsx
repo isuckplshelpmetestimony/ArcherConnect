@@ -17,14 +17,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Check if user exists in localStorage
-    const savedUser = localStorage.getItem("campusconnect_user");
+    const savedUser = localStorage.getItem("archerconnect_user");
     if (savedUser) {
       try {
         const userData = JSON.parse(savedUser);
         setUser(userData);
       } catch (error) {
         console.error("Error parsing saved user data:", error);
-        localStorage.removeItem("campusconnect_user");
+        localStorage.removeItem("archerconnect_user");
       }
     }
     setIsLoading(false);
@@ -37,7 +37,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const response = await apiRequest("POST", "/api/user", userData);
         const newUser = await response.json();
         setUser(newUser);
-        localStorage.setItem("campusconnect_user", JSON.stringify(newUser));
+        localStorage.setItem("archerconnect_user", JSON.stringify(newUser));
       } catch (error) {
         console.error("Error creating user:", error);
         throw error;
