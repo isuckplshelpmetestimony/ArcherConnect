@@ -65,6 +65,13 @@ export const resources = pgTable("resources", {
   url: text("url"),
 });
 
+export const favoriteAnnouncements = pgTable("favorite_announcements", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  announcementId: integer("announcement_id").notNull().references(() => announcements.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
 });
@@ -91,6 +98,11 @@ export const insertResourceSchema = createInsertSchema(resources).omit({
   id: true,
 });
 
+export const insertFavoriteAnnouncementSchema = createInsertSchema(favoriteAnnouncements).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Announcement = typeof announcements.$inferSelect;
@@ -103,3 +115,5 @@ export type Event = typeof events.$inferSelect;
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type Resource = typeof resources.$inferSelect;
 export type InsertResource = z.infer<typeof insertResourceSchema>;
+export type FavoriteAnnouncement = typeof favoriteAnnouncements.$inferSelect;
+export type InsertFavoriteAnnouncement = z.infer<typeof insertFavoriteAnnouncementSchema>;
