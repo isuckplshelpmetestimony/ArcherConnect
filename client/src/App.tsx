@@ -17,42 +17,7 @@ import Events from "@/pages/events";
 import Resources from "@/pages/resources";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem("auth_token");
-      const userId = localStorage.getItem("user_id");
-      
-      if (token && userId) {
-        try {
-          const response = await fetch("/api/auth/user", {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'x-user-id': userId,
-            },
-          });
-          
-          if (response.ok) {
-            const userData = await response.json();
-            setUser(userData);
-          } else {
-            localStorage.removeItem("auth_token");
-            localStorage.removeItem("user_id");
-          }
-        } catch (error) {
-          console.error("Auth check failed:", error);
-          localStorage.removeItem("auth_token");
-          localStorage.removeItem("user_id");
-        }
-      }
-      
-      setIsLoading(false);
-    };
-    
-    checkAuth();
-  }, []);
+  const { user, isLoading } = useAuth();
   
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
