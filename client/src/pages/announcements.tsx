@@ -19,12 +19,9 @@ export default function Announcements() {
   const [relevanceFilter, setRelevanceFilter] = useState("all");
 
   const { data: announcements, isLoading } = useQuery<Announcement[]>({
-    queryKey: ["/api/announcements", categoryFilter, user?.interests],
+    queryKey: ["/api/announcements", user?.interests],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (categoryFilter !== "all") {
-        params.append("category", categoryFilter);
-      }
       if (user?.interests && user.interests.length > 0) {
         params.append("interests", user.interests.join(","));
       }
@@ -196,28 +193,14 @@ export default function Announcements() {
                   </SelectContent>
                 </Select>
                 
-                <Select value={dateFilter} onValueChange={setDateFilter}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Date" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="recent">Recent</SelectItem>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="week">This Week</SelectItem>
-                    <SelectItem value="month">This Month</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Category" />
+                <Select value={relevanceFilter} onValueChange={setRelevanceFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Filter" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="academic">Academic</SelectItem>
-                    <SelectItem value="career">Career</SelectItem>
-                    <SelectItem value="events">Events</SelectItem>
-                    <SelectItem value="services">Services</SelectItem>
+                    <SelectItem value="relevant">Relevant</SelectItem>
+                    <SelectItem value="irrelevant">Irrelevant</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

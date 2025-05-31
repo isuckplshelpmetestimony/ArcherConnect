@@ -673,7 +673,7 @@ export class MemStorage implements IStorage {
 
   async addFavoriteAnnouncement(insertFavorite: InsertFavoriteAnnouncement): Promise<FavoriteAnnouncement> {
     const id = Date.now();
-    const favorite: FavoriteAnnouncement = { ...insertFavorite, id };
+    const favorite: FavoriteAnnouncement = { ...insertFavorite, id, createdAt: new Date() };
     const key = `${insertFavorite.userId}-${insertFavorite.announcementId}`;
     this.favorites.set(key, favorite);
     return favorite;
