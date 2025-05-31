@@ -39,9 +39,16 @@ export default function Announcements() {
 
   const scrapeFacebookMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("/api/scrape-facebook", {
+      const response = await fetch("/api/scrape-facebook", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
+      if (!response.ok) {
+        throw new Error("Failed to scrape Facebook posts");
+      }
+      return response.json();
     },
     onSuccess: (data) => {
       toast({
@@ -105,9 +112,20 @@ export default function Announcements() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Announcements</h1>
-          <p className="mt-1 text-sm text-gray-600">Stay updated with the latest news and opportunities.</p>
+        <div className="mb-6 flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Announcements</h1>
+            <p className="mt-1 text-sm text-gray-600">Stay updated with the latest news and opportunities.</p>
+          </div>
+          <Button
+            onClick={() => scrapeFacebookMutation.mutate()}
+            disabled={scrapeFacebookMutation.isPending}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${scrapeFacebookMutation.isPending ? 'animate-spin' : ''}`} />
+            {scrapeFacebookMutation.isPending ? 'Fetching...' : 'Refresh from Facebook'}
+          </Button>
         </div>
 
         {/* Search and Filters */}
