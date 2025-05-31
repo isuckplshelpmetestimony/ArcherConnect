@@ -58,7 +58,7 @@ export default function Events() {
         body: JSON.stringify({
           title: data.title,
           description: data.description,
-          date: new Date(data.date).toISOString(),
+          date: new Date(data.date),
           location: data.location,
           category: data.category,
           icon: "fas fa-calendar",
