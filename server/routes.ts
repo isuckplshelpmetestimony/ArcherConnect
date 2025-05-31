@@ -4,8 +4,158 @@ import { storage } from "./storage";
 import { FacebookScraper } from "./facebook-scraper";
 import { insertUserSchema, insertFavoriteAnnouncementSchema, insertGroupSchema, insertEventSchema } from "@shared/schema";
 import { z } from "zod";
+import crypto from "crypto";
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+
+const signupSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+
+function hashPassword(password: string): string {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+function generateToken(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentication routes
+  app.post("/api/auth/signup", async (req, res) => {
+    try {
+      const result = signupSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid signup data", 
+          errors: result.error.errors 
+        });
+      }
+
+      const { name, email, password } = result.data;
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ message: "User already exists" });
+      }
+
+      // Create new user
+      const hashedPassword = hashPassword(password);
+      const user = await storage.createUser({
+        name,
+        email,
+        password: hashedPassword,
+        major: "",
+        interests: [],
+        notificationPreferences: [],
+        keywords: [],
+        emailNotifications: true,
+        pushNotifications: true,
+        onboardingCompleted: false,
+      });
+
+      const token = generateToken();
+      
+      res.status(201).json({
+        message: "User created successfully",
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          major: user.major,
+          interests: user.interests,
+          notificationPreferences: user.notificationPreferences,
+          keywords: user.keywords,
+          emailNotifications: user.emailNotifications,
+          pushNotifications: user.pushNotifications,
+          onboardingCompleted: user.onboardingCompleted,
+        },
+      });
+    } catch (error) {
+      console.error("Signup error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const result = loginSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid login data", 
+          errors: result.error.errors 
+        });
+      }
+
+      const { email, password } = result.data;
+      const hashedPassword = hashPassword(password);
+
+      const user = await storage.getUserByEmail(email);
+      if (!user || user.password !== hashedPassword) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      const token = generateToken();
+      
+      res.json({
+        message: "Login successful",
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          major: user.major,
+          interests: user.interests,
+          notificationPreferences: user.notificationPreferences,
+          keywords: user.keywords,
+          emailNotifications: user.emailNotifications,
+          pushNotifications: user.pushNotifications,
+          onboardingCompleted: user.onboardingCompleted,
+        },
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/auth/user", async (req, res) => {
+    try {
+      const userId = req.headers['x-user-id'];
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const user = await storage.getUser(parseInt(userId as string));
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        major: user.major,
+        interests: user.interests,
+        notificationPreferences: user.notificationPreferences,
+        keywords: user.keywords,
+        emailNotifications: user.emailNotifications,
+        pushNotifications: user.pushNotifications,
+        onboardingCompleted: user.onboardingCompleted,
+      });
+    } catch (error) {
+      console.error("Get user error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // User routes
   app.get("/api/user/:id", async (req, res) => {
     try {

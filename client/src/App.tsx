@@ -1,10 +1,10 @@
+import { useState, useEffect } from "react";
 import { Switch, Route, Redirect } from "wouter";
-import { useAuth0 } from "@auth0/auth0-react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { UserProvider, useUser } from "@/hooks/use-user";
+import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import Onboarding from "@/pages/onboarding";
@@ -17,19 +17,53 @@ import Events from "@/pages/events";
 import Resources from "@/pages/resources";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading: authLoading } = useAuth0();
-  const { user, isLoading } = useUser();
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
-  if (authLoading || isLoading) {
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem("auth_token");
+      const userId = localStorage.getItem("user_id");
+      
+      if (token && userId) {
+        try {
+          const response = await fetch("/api/auth/user", {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'x-user-id': userId,
+            },
+          });
+          
+          if (response.ok) {
+            const userData = await response.json();
+            setUser(userData);
+          } else {
+            localStorage.removeItem("auth_token");
+            localStorage.removeItem("user_id");
+          }
+        } catch (error) {
+          console.error("Auth check failed:", error);
+          localStorage.removeItem("auth_token");
+          localStorage.removeItem("user_id");
+        }
+      }
+      
+      setIsLoading(false);
+    };
+    
+    checkAuth();
+  }, []);
+  
+  if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
   
-  if (!isAuthenticated) {
+  if (!user) {
     return <Login />;
   }
   
-  if (!user || !user.onboardingCompleted) {
-    return <Redirect to="/onboarding" />;
+  if (user && !user.onboardingCompleted) {
+    return <Onboarding />;
   }
   
   return <>{children}</>;
@@ -37,47 +71,45 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function Router() {
   return (
-    <UserProvider>
-      <Switch>
-        <Route path="/" component={Onboarding} />
-        <Route path="/dashboard">
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/announcements">
-          <ProtectedRoute>
-            <Announcements />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/notifications">
-          <ProtectedRoute>
-            <Notifications />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/settings">
-          <ProtectedRoute>
-            <Settings />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/groups">
-          <ProtectedRoute>
-            <Groups />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/events">
-          <ProtectedRoute>
-            <Events />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/resources">
-          <ProtectedRoute>
-            <Resources />
-          </ProtectedRoute>
-        </Route>
-        <Route component={NotFound} />
-      </Switch>
-    </UserProvider>
+    <Switch>
+      <Route path="/">
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/onboarding" component={Onboarding} />
+      <Route path="/announcements">
+        <ProtectedRoute>
+          <Announcements />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/notifications">
+        <ProtectedRoute>
+          <Notifications />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/settings">
+        <ProtectedRoute>
+          <Settings />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/groups">
+        <ProtectedRoute>
+          <Groups />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/events">
+        <ProtectedRoute>
+          <Events />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/resources">
+        <ProtectedRoute>
+          <Resources />
+        </ProtectedRoute>
+      </Route>
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 
