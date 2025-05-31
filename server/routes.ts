@@ -403,6 +403,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Group chat endpoints
+  app.get("/api/groups/:id/messages", async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.id);
+      const messages = await storage.getGroupMessages(groupId);
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch group messages" });
+    }
+  });
+
+  app.post("/api/groups/:id/messages", async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.id);
+      const { message, userId } = req.body;
+      
+      const newMessage = await storage.sendGroupMessage({
+        groupId,
+        userId: userId || 1, // Should get from auth
+        message,
+      });
+      
+      res.json(newMessage);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
   // Events endpoints
   app.get("/api/events", async (req, res) => {
     try {

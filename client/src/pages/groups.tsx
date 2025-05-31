@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,13 +9,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
-import { Code, Palette, Scale, Users, Heart, Music, Plus, UserPlus, UserMinus, MessageCircle } from "lucide-react";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Code, Palette, Scale, Users, Heart, Music, Plus, UserPlus, UserMinus, MessageCircle, Send, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import type { Group, InsertGroup } from "@shared/schema";
+import type { Group, InsertGroup, GroupMessage } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 
 const groupSchema = z.object({
@@ -25,7 +26,12 @@ const groupSchema = z.object({
   icon: z.string().min(1, "Icon is required"),
 });
 
+const messageSchema = z.object({
+  message: z.string().min(1, "Message cannot be empty"),
+});
+
 type GroupForm = z.infer<typeof groupSchema>;
+type MessageForm = z.infer<typeof messageSchema>;
 
 export default function Groups() {
   const { user } = useAuth();
@@ -42,6 +48,11 @@ export default function Groups() {
     enabled: !!user,
   });
 
+  const { data: chatMessages, refetch: refetchMessages } = useQuery<GroupMessage[]>({
+    queryKey: [`/api/groups/${selectedGroupChat}/messages`],
+    enabled: !!selectedGroupChat,
+  });
+
   const form = useForm<GroupForm>({
     resolver: zodResolver(groupSchema),
     defaultValues: {
@@ -49,6 +60,13 @@ export default function Groups() {
       description: "",
       category: "",
       icon: "fas fa-users",
+    },
+  });
+
+  const messageForm = useForm<MessageForm>({
+    resolver: zodResolver(messageSchema),
+    defaultValues: {
+      message: "",
     },
   });
 
@@ -134,6 +152,32 @@ export default function Groups() {
     onError: (error) => {
       toast({
         title: "Failed to leave group",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendMessageMutation = useMutation({
+    mutationFn: async (data: MessageForm) => {
+      if (!selectedGroupChat) throw new Error("No group selected");
+      
+      return await apiRequest(`/api/groups/${selectedGroupChat}/messages`, {
+        method: "POST",
+        body: JSON.stringify({
+          message: data.message,
+          userId: user?.id || 1,
+        }),
+      });
+    },
+    onSuccess: () => {
+      messageForm.reset();
+      refetchMessages();
+      queryClient.invalidateQueries({ queryKey: [`/api/groups/${selectedGroupChat}/messages`] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to send message",
         description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
       });
