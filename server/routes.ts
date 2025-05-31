@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { FacebookScraper } from "./facebook-scraper";
-import { insertUserSchema } from "@shared/schema";
+import { insertUserSchema, insertFavoriteAnnouncementSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -128,6 +128,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resources = await storage.getResources();
       }
       res.json(resources);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Favorite announcements routes
+  app.get("/api/user/:userId/favorites", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const favorites = await storage.getFavoriteAnnouncementsByUserId(userId);
+      res.json(favorites);
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/user/:userId/favorites", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { announcementId } = insertFavoriteAnnouncementSchema.parse({
+        ...req.body,
+        userId
+      });
+      
+      const favorite = await storage.addFavoriteAnnouncement({ userId, announcementId });
+      res.json(favorite);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request data" });
+    }
+  });
+
+  app.delete("/api/user/:userId/favorites/:announcementId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const announcementId = parseInt(req.params.announcementId);
+      
+      const success = await storage.removeFavoriteAnnouncement(userId, announcementId);
+      if (success) {
+        res.json({ message: "Favorite removed successfully" });
+      } else {
+        res.status(404).json({ message: "Favorite not found" });
+      }
     } catch (error) {
       res.status(500).json({ message: "Internal server error" });
     }

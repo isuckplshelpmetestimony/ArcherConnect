@@ -22,6 +22,11 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
+  const { data: favoriteAnnouncements, isLoading: favoritesLoading } = useQuery<Announcement[]>({
+    queryKey: [`/api/user/${user?.id || 1}/favorites`],
+    enabled: !!user,
+  });
+
   const stats = {
     announcements: announcements?.length || 0,
     events: events?.filter(e => new Date(e.date) > new Date()).length || 0,

@@ -6,7 +6,7 @@ import {
   type FavoriteAnnouncement, type InsertFavoriteAnnouncement
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -218,6 +218,58 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return resource;
   }
+
+  async getFavoriteAnnouncementsByUserId(userId: number): Promise<Announcement[]> {
+    const favoriteAnnouncementsList = await db
+      .select({
+        id: announcements.id,
+        title: announcements.title,
+        content: announcements.content,
+        category: announcements.category,
+        date: announcements.date,
+        relevantInterests: announcements.relevantInterests,
+        relevantMajors: announcements.relevantMajors,
+      })
+      .from(favoriteAnnouncements)
+      .innerJoin(announcements, eq(favoriteAnnouncements.announcementId, announcements.id))
+      .where(eq(favoriteAnnouncements.userId, userId))
+      .orderBy(announcements.date);
+    
+    return favoriteAnnouncementsList;
+  }
+
+  async addFavoriteAnnouncement(insertFavorite: InsertFavoriteAnnouncement): Promise<FavoriteAnnouncement> {
+    const [favorite] = await db
+      .insert(favoriteAnnouncements)
+      .values(insertFavorite)
+      .returning();
+    return favorite;
+  }
+
+  async removeFavoriteAnnouncement(userId: number, announcementId: number): Promise<boolean> {
+    const result = await db
+      .delete(favoriteAnnouncements)
+      .where(
+        and(
+          eq(favoriteAnnouncements.userId, userId),
+          eq(favoriteAnnouncements.announcementId, announcementId)
+        )
+      );
+    return (result.rowCount || 0) > 0;
+  }
+
+  async isFavoriteAnnouncement(userId: number, announcementId: number): Promise<boolean> {
+    const [favorite] = await db
+      .select()
+      .from(favoriteAnnouncements)
+      .where(
+        and(
+          eq(favoriteAnnouncements.userId, userId),
+          eq(favoriteAnnouncements.announcementId, announcementId)
+        )
+      );
+    return !!favorite;
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -227,6 +279,7 @@ export class MemStorage implements IStorage {
   private groups: Map<number, Group> = new Map();
   private events: Map<number, Event> = new Map();
   private resources: Map<number, Resource> = new Map();
+  private favorites: Map<string, FavoriteAnnouncement> = new Map();
   
   private currentUserId = 1;
   private currentAnnouncementId = 1;
