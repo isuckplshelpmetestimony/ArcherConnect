@@ -20,13 +20,11 @@ interface FacebookResponse {
 }
 
 const ORGANIZATION_PAGES = {
+  'De La Salle University': 'DLSU.Manila.100',
   'Archers Network': 'ArchersNetwork',
-  'DLSU USG': 'dlsuusg',
-  'Englicom': 'DLSUEnglicom',
-  'Peer Tutor\'s Society': 'DLSUPeerTutorsSociety',
-  'DLSU MaFIA': 'DLSUMaFIA',
-  'De La Salle University': 'delasalleuniversity',
-  'Investor\'s Society': 'DLSUInvestorsSociety'
+  'DLSU USG': 'dlsu.usg',
+  'Englicom': 'dlsu.englicom',
+  'Investor\'s Society': 'InvestorsSocietyDLSU'
 };
 
 const INTEREST_KEYWORDS = {
@@ -51,12 +49,14 @@ const DEPARTMENT_KEYWORDS = {
 
 class FacebookScraper {
   private accessToken: string;
-  private baseUrl = 'https://graph.facebook.com/v18.0';
+  private baseUrl = 'https://graph.facebook.com/v23.0';
 
   constructor() {
     this.accessToken = process.env.FACEBOOK_ACCESS_TOKEN || '';
+    console.log('Facebook Token exists:', !!this.accessToken);
+    console.log('Token first 10 chars:', this.accessToken?.substring(0, 10));
     if (!this.accessToken) {
-      throw new Error('FACEBOOK_ACCESS_TOKEN is required');
+      throw new Error('Facebook Access Token not configured');
     }
   }
 

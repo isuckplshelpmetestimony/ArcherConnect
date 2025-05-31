@@ -1,0 +1,146 @@
+# Facebook Access Token Implementation Instructions
+
+## Context
+You need to implement Facebook Access Token functionality to enable the "Refresh Announcements" feature that fetches real announcements from DLSU's official Facebook pages.
+
+## Current Situation
+- The Facebook scraper is already configured but needs API credentials
+- The feature is not working because it lacks a valid Facebook Access Token
+- Token needed: `EAAJpfqQ3QC8BO5qGvQ4O6veWig0v8LIssNOZAgvjPcLtM7JUqRDKIZCw0R8bbnyIlL0tU8ni8tYudNKJvEtokESFGcbZB7OHBY41bg66f1NOOwrQdXaJ5y0871BQLZA7VKwhEVdrTWj9xJqFlQs8FIzZBtvlFAmukHarJTctakBfLdThYiKR9byWQmBZCUIcult6r2SQi8dfpMBXZA9L2Bqir9ZB54W31tpt8gDzqbVMRgpCq0uTjMAZD`
+
+## Task 1: Create Environment Variables File
+1. Check if `.env` file exists in the project root directory
+2. If not, create `.env` file
+3. Add this line to the `.env` file:
+   ```
+   FACEBOOK_ACCESS_TOKEN=EAAJpfqQ3QC8BO5qGvQ4O6veWig0v8LIssNOZAgvjPcLtM7JUqRDKIZCw0R8bbnyIlL0tU8ni8tYudNKJvEtokESFGcbZB7OHBY41bg66f1NOOwrQdXaJ5y0871BQLZA7VKwhEVdrTWj9xJqFlQs8FIzZBtvlFAmukHarJTctakBfLdThYiKR9byWQmBZCUIcult6r2SQi8dfpMBXZA9L2Bqir9ZB54W31tpt8gDzqbVMRgpCq0uTjMAZD
+   ```
+4. Ensure `.env` is listed in `.gitignore` file
+
+## Task 2: Install Required Dependencies
+1. Check if `dotenv` package is installed in package.json
+2. If not installed, run: `npm install dotenv`
+3. Verify installation by checking package.json dependencies
+
+## Task 3: Configure Environment Variables Loading
+1. Locate the main application entry file (usually `index.js`, `app.js`, or `server.js`)
+2. Add at the very top of the file (first line):
+   ```javascript
+   require('dotenv').config();
+   ```
+
+## Task 4: Update Facebook Scraper Implementation
+1. Locate the Facebook scraper file (search for files containing "facebook", "scraper", or "announcement")
+2. Update the file to include:
+   ```javascript
+   const FACEBOOK_ACCESS_TOKEN = process.env.FACEBOOK_ACCESS_TOKEN;
+   
+   async function fetchDLSUAnnouncements() {
+     if (!FACEBOOK_ACCESS_TOKEN) {
+       throw new Error('Facebook Access Token not configured');
+     }
+     
+     const dlsuPages = [
+       'DLSU.Manila.100',      // De La Salle University
+       'ArchersNetwork',       // Archer's Network
+       'dlsu.usg',             // DLSU USG
+       'InvestorsSocietyDLSU', // Investor's Society
+       'dlsu.englicom'         // Englicom DLSU
+     ];
+     
+     const allAnnouncements = [];
+     
+     for (const pageId of dlsuPages) {
+       try {
+         const url = `https://graph.facebook.com/v23.0/${pageId}/posts?fields=message,created_time,permalink_url,from&limit=10&access_token=${FACEBOOK_ACCESS_TOKEN}`;
+         
+         const response = await fetch(url);
+         const data = await response.json();
+         
+         if (data.error) {
+           console.error(`Facebook API Error for ${pageId}:`, data.error);
+           continue;
+         }
+         
+         if (data.data) {
+           const formattedPosts = data.data.map(post => ({
+             ...post,
+             source: pageId,
+             category: categorizeAnnouncement(post.message || '')
+           }));
+           allAnnouncements.push(...formattedPosts);
+         }
+       } catch (error) {
+         console.error(`Error fetching from ${pageId}:`, error);
+       }
+     }
+     
+     return allAnnouncements;
+   }
+   
+   function categorizeAnnouncement(message) {
+     const lowerMessage = message.toLowerCase();
+     if (lowerMessage.includes('deadline') || lowerMessage.includes('submit')) return 'deadline';
+     if (lowerMessage.includes('event') || lowerMessage.includes('seminar')) return 'event';
+     if (lowerMessage.includes('scholar') || lowerMessage.includes('grant')) return 'scholarship';
+     return 'general';
+   }
+   ```
+
+## Task 5: Add Error Handling and Logging
+1. Wrap the token usage in try-catch blocks
+2. Add console.log statements to debug:
+   ```javascript
+   console.log('Facebook Token exists:', !!FACEBOOK_ACCESS_TOKEN);
+   console.log('Token first 10 chars:', FACEBOOK_ACCESS_TOKEN?.substring(0, 10));
+   ```
+
+## Task 6: Test the Implementation
+1. Create a test endpoint or add to existing refresh endpoint:
+   ```javascript
+   app.get('/api/test-facebook-token', async (req, res) => {
+     try {
+       const testUrl = `https://graph.facebook.com/v23.0/me?access_token=${process.env.FACEBOOK_ACCESS_TOKEN}`;
+       const response = await fetch(testUrl);
+       const data = await response.json();
+       
+       if (data.error) {
+         return res.status(400).json({ 
+           success: false, 
+           error: 'Invalid token', 
+           details: data.error 
+         });
+       }
+       
+       res.json({ 
+         success: true, 
+         message: 'Token is valid',
+         tokenInfo: data 
+       });
+     } catch (error) {
+       res.status(500).json({ 
+         success: false, 
+         error: error.message 
+       });
+     }
+   });
+   ```
+
+## Task 7: Integrate with Existing Refresh Functionality
+1. Find the "Refresh Announcements" endpoint/function
+2. Update it to call `fetchDLSUAnnouncements()`
+3. Save the fetched announcements to the database
+4. Return success/failure status to the user
+
+## Expected Outcome
+After completing these tasks:
+- The "Refresh Announcements" button should work
+- Real Facebook posts from DLSU pages should appear in the system
+- Announcements should be automatically categorized
+- Students should see fresh announcements from official DLSU sources
+
+## Important Notes
+- This token expires in 1-2 hours (temporary solution for testing)
+- For production, implement token refresh mechanism or use long-lived tokens
+- Never commit the `.env` file to version control
+- Token should only be used server-side, never in client code
