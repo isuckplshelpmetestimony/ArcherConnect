@@ -10,15 +10,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser } from "@/hooks/use-user";
-import { MAJORS, INTERESTS, CLUBS } from "@/lib/types";
+import { DEPARTMENTS, INTERESTS } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
 const onboardingSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Valid email is required"),
-  major: z.string().min(1, "Please select your major"),
+  major: z.string().min(1, "Please select your department"),
   interests: z.array(z.string()).min(1, "Please select at least one interest"),
-  clubs: z.array(z.string()).optional(),
 });
 
 type OnboardingForm = z.infer<typeof onboardingSchema>;
@@ -36,7 +35,6 @@ export default function Onboarding() {
       email: "",
       major: "",
       interests: [],
-      clubs: [],
     },
   });
 
@@ -138,17 +136,17 @@ export default function Onboarding() {
                   name="major"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Major</FormLabel>
+                      <FormLabel>College Department</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger className="w-full px-4 py-3 border border-gray-300 rounded-lg">
-                            <SelectValue placeholder="Select your major" />
+                            <SelectValue placeholder="Select your department" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {MAJORS.map((major) => (
-                            <SelectItem key={major.value} value={major.value}>
-                              {major.label}
+                          {DEPARTMENTS.map((department) => (
+                            <SelectItem key={department.value} value={department.value}>
+                              {department.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -205,52 +203,7 @@ export default function Onboarding() {
                   )}
                 />
 
-                {/* Clubs Selection */}
-                <FormField
-                  control={form.control}
-                  name="clubs"
-                  render={() => (
-                    <FormItem>
-                      <FormLabel>Clubs (Optional)</FormLabel>
-                      <div className="space-y-2">
-                        {CLUBS.map((club) => (
-                          <FormField
-                            key={club.value}
-                            control={form.control}
-                            name="clubs"
-                            render={({ field }) => {
-                              return (
-                                <FormItem
-                                  key={club.value}
-                                  className="flex flex-row items-start space-x-3 space-y-0"
-                                >
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(club.value)}
-                                      onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([...(field.value || []), club.value])
-                                          : field.onChange(
-                                              field.value?.filter(
-                                                (value) => value !== club.value
-                                              )
-                                            );
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="text-sm font-medium cursor-pointer">
-                                    {club.label}
-                                  </FormLabel>
-                                </FormItem>
-                              );
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
 
                 {/* Continue Button */}
                 <Button

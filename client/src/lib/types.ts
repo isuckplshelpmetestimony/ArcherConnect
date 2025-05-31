@@ -4,7 +4,6 @@ export interface UserProfile {
   email: string;
   major: string;
   interests: string[];
-  clubs: string[];
   notificationPreferences: string[];
   keywords: string[];
   emailNotifications: boolean;
@@ -19,12 +18,15 @@ export interface DashboardStats {
   resources: number;
 }
 
-export const MAJORS = [
-  { value: "computer-science", label: "Computer Science" },
-  { value: "business", label: "Business Administration" },
-  { value: "engineering", label: "Engineering" },
-  { value: "arts", label: "Liberal Arts" },
-  { value: "sciences", label: "Life Sciences" },
+export const DEPARTMENTS = [
+  { value: "rvrcob", label: "Ramon V. del Rosario College of Business (RVRCOB)" },
+  { value: "gcoe", label: "Gokongwei College of Engineering (GCOE)" },
+  { value: "cla", label: "College of Liberal Arts (CLA)" },
+  { value: "ccs", label: "College of Computer Studies (CCS)" },
+  { value: "cos", label: "College of Science (COS)" },
+  { value: "bagced", label: "Br. Andrew Gonzalez College of Education (BAGCED)" },
+  { value: "soe", label: "School of Economics (SOE)" },
+  { value: "tdsol", label: "Tañada-Diokno School of Law (TDSOL)" },
 ];
 
 export const INTERESTS = [
@@ -36,13 +38,7 @@ export const INTERESTS = [
   { value: "social-events", label: "Social Events" },
 ];
 
-export const CLUBS = [
-  { value: "debate-club", label: "Debate Club" },
-  { value: "coding-club", label: "Coding Club" },
-  { value: "drama-society", label: "Drama Society" },
-  { value: "sports-club", label: "Sports Club" },
-  { value: "volunteer-group", label: "Volunteer Group" },
-];
+
 
 export const NOTIFICATION_PREFERENCES = [
   { value: "academics", label: "Academics" },
