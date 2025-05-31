@@ -515,7 +515,9 @@ export class MemStorage implements IStorage {
     const announcement: Announcement = { 
       ...insertAnnouncement, 
       id, 
-      date: new Date() 
+      date: new Date(),
+      relevantInterests: insertAnnouncement.relevantInterests || [],
+      relevantMajors: insertAnnouncement.relevantMajors || []
     };
     this.announcements.set(id, announcement);
     return announcement;
@@ -578,7 +580,9 @@ export class MemStorage implements IStorage {
     const notification: Notification = { 
       ...insertNotification, 
       id, 
-      date: new Date() 
+      date: new Date(),
+      read: insertNotification.read || false,
+      deadline: insertNotification.deadline || null
     };
     this.notifications.set(id, notification);
     return notification;
@@ -616,7 +620,7 @@ export class MemStorage implements IStorage {
 
   async createGroup(insertGroup: InsertGroup): Promise<Group> {
     const id = this.currentGroupId++;
-    const group: Group = { ...insertGroup, id };
+    const group: Group = { ...insertGroup, id, memberCount: 0 };
     this.groups.set(id, group);
     return group;
   }
@@ -634,7 +638,7 @@ export class MemStorage implements IStorage {
 
   async createEvent(insertEvent: InsertEvent): Promise<Event> {
     const id = this.currentEventId++;
-    const event: Event = { ...insertEvent, id };
+    const event: Event = { ...insertEvent, id, registered: false };
     this.events.set(id, event);
     return event;
   }
@@ -650,9 +654,39 @@ export class MemStorage implements IStorage {
 
   async createResource(insertResource: InsertResource): Promise<Resource> {
     const id = this.currentResourceId++;
-    const resource: Resource = { ...insertResource, id };
+    const resource: Resource = { ...insertResource, id, url: insertResource.url || null };
     this.resources.set(id, resource);
     return resource;
+  }
+
+  async getFavoriteAnnouncementsByUserId(userId: number): Promise<Announcement[]> {
+    const userFavorites = Array.from(this.favorites.values()).filter(fav => fav.userId === userId);
+    const favoriteAnnouncements: Announcement[] = [];
+    for (const favorite of userFavorites) {
+      const announcement = this.announcements.get(favorite.announcementId);
+      if (announcement) {
+        favoriteAnnouncements.push(announcement);
+      }
+    }
+    return favoriteAnnouncements;
+  }
+
+  async addFavoriteAnnouncement(insertFavorite: InsertFavoriteAnnouncement): Promise<FavoriteAnnouncement> {
+    const id = Date.now();
+    const favorite: FavoriteAnnouncement = { ...insertFavorite, id };
+    const key = `${insertFavorite.userId}-${insertFavorite.announcementId}`;
+    this.favorites.set(key, favorite);
+    return favorite;
+  }
+
+  async removeFavoriteAnnouncement(userId: number, announcementId: number): Promise<boolean> {
+    const key = `${userId}-${announcementId}`;
+    return this.favorites.delete(key);
+  }
+
+  async isFavoriteAnnouncement(userId: number, announcementId: number): Promise<boolean> {
+    const key = `${userId}-${announcementId}`;
+    return this.favorites.has(key);
   }
 }
 
