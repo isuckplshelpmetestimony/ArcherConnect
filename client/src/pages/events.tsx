@@ -16,7 +16,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { Event, InsertEvent } from "@shared/schema";
-import { useUser } from "@/hooks/use-user";
+import { useAuth } from "@/hooks/useAuth";
 
 const eventSchema = z.object({
   title: z.string().min(1, "Event title is required"),
@@ -29,7 +29,7 @@ const eventSchema = z.object({
 type EventForm = z.infer<typeof eventSchema>;
 
 export default function Events() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 

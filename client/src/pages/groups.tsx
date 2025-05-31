@@ -16,7 +16,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { Group, InsertGroup } from "@shared/schema";
-import { useUser } from "@/hooks/use-user";
+import { useAuth } from "@/hooks/useAuth";
 
 const groupSchema = z.object({
   name: z.string().min(1, "Group name is required"),
@@ -28,7 +28,7 @@ const groupSchema = z.object({
 type GroupForm = z.infer<typeof groupSchema>;
 
 export default function Groups() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
