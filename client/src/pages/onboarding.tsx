@@ -9,7 +9,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useUser } from "@/hooks/use-user";
 import { DEPARTMENTS, INTERESTS } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -24,7 +23,6 @@ type OnboardingForm = z.infer<typeof onboardingSchema>;
 
 export default function Onboarding() {
   const [, setLocation] = useLocation();
-  const { updateUser } = useUser();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -41,21 +39,40 @@ export default function Onboarding() {
   const onSubmit = async (data: OnboardingForm) => {
     setIsLoading(true);
     try {
-      await updateUser({
-        ...data,
-        notificationPreferences: ["academics", "campus-events", "career-services", "student-life", "general-announcements"],
-        keywords: [],
-        emailNotifications: true,
-        pushNotifications: false,
-        onboardingCompleted: true,
+      const userId = localStorage.getItem("user_id");
+      const token = localStorage.getItem("auth_token");
+      
+      if (!userId || !token) {
+        throw new Error("Authentication required");
+      }
+
+      const response = await fetch(`/api/user/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "x-user-id": userId,
+        },
+        body: JSON.stringify({
+          ...data,
+          notificationPreferences: ["academics", "campus-events", "career-services", "student-life", "general-announcements"],
+          keywords: [],
+          emailNotifications: true,
+          pushNotifications: false,
+          onboardingCompleted: true,
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error("Failed to update profile");
+      }
 
       toast({
         title: "Welcome to ArcherConnect!",
         description: "Your profile has been set up successfully.",
       });
 
-      setLocation("/dashboard");
+      setLocation("/");
     } catch (error) {
       toast({
         title: "Error",
