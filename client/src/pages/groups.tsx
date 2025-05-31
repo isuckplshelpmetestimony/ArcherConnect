@@ -162,13 +162,18 @@ export default function Groups() {
     mutationFn: async (data: MessageForm) => {
       if (!selectedGroupChat) throw new Error("No group selected");
       
-      return await apiRequest(`/api/groups/${selectedGroupChat}/messages`, {
+      const response = await fetch(`/api/groups/${selectedGroupChat}/messages`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           message: data.message,
           userId: user?.id || 1,
         }),
       });
+      if (!response.ok) throw new Error("Failed to send message");
+      return response.json();
     },
     onSuccess: () => {
       messageForm.reset();
@@ -405,6 +410,90 @@ export default function Groups() {
             </div>
           )}
         </div>
+
+        {/* Chat Dialog */}
+        {selectedGroupChat && (
+          <Dialog open={!!selectedGroupChat} onOpenChange={() => setSelectedGroupChat(null)}>
+            <DialogContent className="max-w-2xl h-[80vh] flex flex-col">
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-between">
+                  <span>Group Chat - {groups?.find(g => g.id === selectedGroupChat)?.name}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedGroupChat(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </DialogTitle>
+              </DialogHeader>
+              
+              <div className="flex-1 flex flex-col">
+                <ScrollArea className="flex-1 p-4 border rounded-lg mb-4">
+                  <div className="space-y-4">
+                    {chatMessages && chatMessages.length > 0 ? (
+                      chatMessages.map((msg) => (
+                        <div
+                          key={msg.id}
+                          className={`flex ${msg.userId === (user?.id || 1) ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div
+                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                              msg.userId === (user?.id || 1)
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted'
+                            }`}
+                          >
+                            <p className="text-sm">{msg.message}</p>
+                            <p className="text-xs opacity-70 mt-1">
+                              {new Date(msg.createdAt).toLocaleTimeString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center text-muted-foreground py-8">
+                        <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No messages yet. Start the conversation!</p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+
+                <Form {...messageForm}>
+                  <form 
+                    onSubmit={messageForm.handleSubmit((data) => sendMessageMutation.mutate(data))}
+                    className="flex gap-2"
+                  >
+                    <FormField
+                      control={messageForm.control}
+                      name="message"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormControl>
+                            <Input
+                              placeholder="Type your message..."
+                              {...field}
+                              disabled={sendMessageMutation.isPending}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button 
+                      type="submit" 
+                      disabled={sendMessageMutation.isPending}
+                      size="sm"
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </form>
+                </Form>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </MainLayout>
   );
