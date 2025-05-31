@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Search, Filter, RefreshCw } from "lucide-react";
+import { Search, Filter, RefreshCw, Star } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -64,6 +64,47 @@ export default function Announcements() {
         variant: "destructive",
       });
     },
+  });
+
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async ({ announcementId, isFavorited }: { announcementId: number; isFavorited: boolean }) => {
+      const userId = user?.id || 1;
+      if (isFavorited) {
+        // Remove from favorites
+        const response = await fetch(`/api/user/${userId}/favorites/${announcementId}`, {
+          method: "DELETE",
+        });
+        if (!response.ok) throw new Error("Failed to remove favorite");
+        return response.json();
+      } else {
+        // Add to favorites
+        const response = await fetch(`/api/user/${userId}/favorites`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ announcementId }),
+        });
+        if (!response.ok) throw new Error("Failed to add favorite");
+        return response.json();
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/user/${user?.id || 1}/favorites`] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to update favorite",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Query to get user's favorite announcements for checking if announcement is favorited
+  const { data: favoriteAnnouncements } = useQuery({
+    queryKey: [`/api/user/${user?.id || 1}/favorites`],
+    enabled: !!user,
   });
 
   const filteredAnnouncements = announcements?.filter(announcement => {
@@ -208,13 +249,26 @@ export default function Announcements() {
                       </p>
                       <p className="text-gray-700 mb-4">{announcement.content}</p>
                     </div>
-                    <Button
-                      variant={isRelevant(announcement) ? "secondary" : "outline"}
-                      size="sm"
-                      className="ml-4"
-                    >
-                      {isRelevant(announcement) ? "Relevant" : "Mark as Relevant"}
-                    </Button>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const isFavorited = favoriteAnnouncements?.some(fav => fav.id === announcement.id) || false;
+                          toggleFavoriteMutation.mutate({ announcementId: announcement.id, isFavorited });
+                        }}
+                        disabled={toggleFavoriteMutation.isPending}
+                        className="flex-shrink-0"
+                      >
+                        <Star 
+                          className={`h-5 w-5 ${
+                            favoriteAnnouncements?.some(fav => fav.id === announcement.id) 
+                              ? 'fill-yellow-400 text-yellow-400' 
+                              : 'text-gray-400 hover:text-yellow-400'
+                          }`} 
+                        />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

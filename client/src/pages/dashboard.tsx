@@ -30,7 +30,7 @@ export default function Dashboard() {
   const stats = {
     announcements: announcements?.length || 0,
     events: events?.filter(e => new Date(e.date) > new Date()).length || 0,
-    groups: user?.clubs?.length || 0,
+    groups: 0,
     resources: 23,
   };
 
@@ -128,13 +128,15 @@ export default function Dashboard() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <TrendingUp className="h-5 w-5" />
-                <span>Recent Announcements</span>
+                <span>Favorite Announcements</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentAnnouncements.length > 0 ? (
-                  recentAnnouncements.map((announcement) => (
+                {favoritesLoading ? (
+                  [...Array(3)].map((_, i) => <Skeleton key={i} className="h-20" />)
+                ) : favoriteAnnouncements && favoriteAnnouncements.length > 0 ? (
+                  favoriteAnnouncements.slice(0, 5).map((announcement) => (
                     <div key={announcement.id} className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-md transition-colors">
                       <Megaphone className="h-5 w-5 text-primary mt-1" />
                       <div className="flex-1 min-w-0">
@@ -147,37 +149,7 @@ export default function Dashboard() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-gray-500 text-center py-4">No recent announcements</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Clock className="h-5 w-5" />
-                <span>Upcoming Deadlines</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {upcomingDeadlines.length > 0 ? (
-                  upcomingDeadlines.map((deadline) => (
-                    <div key={deadline.id} className="flex items-center justify-between p-3 bg-yellow-50 rounded-md">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{deadline.title}</p>
-                        <p className="text-xs text-gray-500">
-                          Due: {deadline.deadline ? new Date(deadline.deadline).toLocaleDateString() : 'No date'}
-                        </p>
-                      </div>
-                      <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                        {deadline.deadline && Math.ceil((new Date(deadline.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500 text-center py-4">No upcoming deadlines</p>
+                  <p className="text-sm text-gray-500 text-center py-4">No favorite announcements yet. Star announcements to see them here!</p>
                 )}
               </div>
             </CardContent>
